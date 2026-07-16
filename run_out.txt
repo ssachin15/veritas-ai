@@ -1,0 +1,23 @@
+[youtube] Extracting URL: https://www.youtube.com/shorts/E4sxmoEYhqg
+[youtube] E4sxmoEYhqg: Downloading webpage
+[youtube] E4sxmoEYhqg: Downloading android vr player API JSON
+[info] E4sxmoEYhqg: Downloading 1 format(s): 18
+[download] Destination: downloads\input_video.mp4
+[download]   0.1% of  673.62KiB at  296.12KiB/s ETA 00:02[download]   0.4% of  673.62KiB at  526.39KiB/s ETA 00:01[download]   1.0% of  673.62KiB at  496.07KiB/s ETA 00:01[download]   2.2% of  673.62KiB at  943.80KiB/s ETA 00:00[download]   4.6% of  673.62KiB at    1.69MiB/s ETA 00:00[download]   9.4% of  673.62KiB at    1.98MiB/s ETA 00:00[download]  18.9% of  673.62KiB at    1.57MiB/s ETA 00:00[download]  37.9% of  673.62KiB at    2.01MiB/s ETA 00:00[download]  75.9% of  673.62KiB at    2.30MiB/s ETA 00:00[download] 100.0% of  673.62KiB at    1.91MiB/s ETA 00:00[download] 100% of  673.62KiB in 00:00:01 at 360.26KiB/s 
+[*] Downloading video...
+[*] Video duration: 8.9s -- extracting 8 frames...
+[*] Running model on each frame...
+  Frame 1: Real=0.311 | Fake=0.689
+  Frame 2: Real=0.661 | Fake=0.339
+  Frame 3: Real=0.776 | Fake=0.224
+  Frame 4: Real=0.969 | Fake=0.031
+  Frame 5: Real=0.451 | Fake=0.549
+  Frame 6: Real=0.360 | Fake=0.640
+  Frame 7: Real=0.061 | Fake=0.939
+  Frame 8: Real=0.771 | Fake=0.229
+
+========================================
+FINAL PREDICTION: REAL
+Confidence: 54.5%
+(avg real=0.545, avg fake=0.455 across 8 frames)
+========================================
