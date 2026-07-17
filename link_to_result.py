@@ -122,6 +122,38 @@ def classify_video(url, num_frames=8):
     }
     print("RESULT_JSON:" + json.dumps(result))
 
+def classify_video_for_api(url, num_frames=8):
+    model = load_model()
+    video_path = download_video(url)
+    frame_paths = extract_frames(video_path, num_frames=num_frames)
+
+    real_scores = []
+    fake_scores = []
+
+    for frame_path in frame_paths:
+        real_p, fake_p = predict_image(frame_path, model)
+        real_scores.append(real_p)
+        fake_scores.append(fake_p)
+
+    avg_real = sum(real_scores) / len(real_scores)
+    avg_fake = sum(fake_scores) / len(fake_scores)
+    top_score = max(avg_real, avg_fake)
+
+    if top_score < 0.65:
+        final_label = "INCONCLUSIVE"
+    else:
+        final_label = "FAKE" if avg_fake > avg_real else "REAL"
+
+    confidence = top_score * 100
+
+    return {
+        "prediction": final_label,
+        "confidence": round(confidence, 1),
+        "avg_real": round(avg_real, 3),
+        "avg_fake": round(avg_fake, 3),
+        "frame_count": len(frame_paths)
+    }
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("url", help="Social media video link (YouTube, Instagram, etc.)")
