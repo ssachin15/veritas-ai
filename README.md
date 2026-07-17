@@ -1,324 +1,63 @@
-# 🧠 Deepfake Detection System
+﻿# VERITAS AI - Deepfake Video Detector
 
-A state-of-the-art deepfake detection system built with PyTorch and EfficientNet-B0, featuring a user-friendly web interface for real-time image and video analysis.
+A full-stack tool that analyzes video links from Instagram, YouTube, and TikTok to detect AI-generated or manipulated content, built with an honest approach to a genuinely hard problem.
 
-## ⚙️ Created By
+## What it does
 
-- 👨‍💻 [T RAHUL SINGH](https://github.com/TRahulsingh)
-- 🧑‍💻 [Mallikarjun Macherla](https://github.com/Mallikarjun-Macherla)
-- 🧑‍💻 [Sainath](https://github.com/sainathch45/)
+Paste a social media video link, and the system:
+1. Downloads the video server-side (no manual upload needed)
+2. Extracts 8 evenly-spaced frames across the video's length
+3. Runs each frame through an EfficientNet-B0 model
+4. Averages the scores into a single confidence result: REAL, FAKE, or INCONCLUSIVE
 
----
+## Why "Inconclusive" exists
 
-## 🌟 Features
+Most deepfake detectors force a binary REAL/FAKE answer even when the underlying signal is weak, which means a 51 percent confidence score gets presented with the same authority as a 99 percent one. This project treats a low-confidence result as information, not something to hide. If the model's top score is below 65 percent, it reports "Inconclusive" rather than guessing.
 
-- **Deep Learning Model**: EfficientNet-B0 architecture fine-tuned for deepfake detection
-- **Multi-format Support**: Analyze both images (.jpg, .jpeg, .png) and videos (.mp4, .mov)
-- **Web Interface**: Interactive Gradio-based web application for easy testing
-- **Real-time Analysis**: Process first frame of videos for quick deepfake detection
-- **Training Pipeline**: Complete PyTorch Lightning training infrastructure
-- **Model Export**: Support for PyTorch (.pt) and ONNX format exports
+## A note on accuracy
 
-## 📐 System Architecture
+This model is trained on FaceForensics++, a well-established but aging dataset built on older face-swap manipulation techniques. It performs reasonably well on that category of manipulation.
 
-For detailed system architecture diagrams, data flow, and component interactions, see [ARCHITECTURE.md](ARCHITECTURE.md).
+However, modern AI video generators such as Sora, Veo, Kling, and Runway Gen-4 do not work by swapping faces onto real footage. They synthesize entire frames from scratch, leaving none of the blending artifacts this model was trained to detect. This is a documented, industry-wide gap as of 2026. Published benchmarks show even leading open-source detectors trained on older datasets score 61 to 69 percent accuracy on real-world content.
 
-## 🚀 Quick Start
+I built this project fully aware of that limitation, and designed the confidence-score plus inconclusive-state UI specifically so the tool does not overstate what it actually knows.
 
-### Prerequisites
+## Tech stack
 
-- Python 3.8 or higher
-- CUDA-compatible GPU (optional, but recommended for training)
+Frontend: React with Vite, TypeScript, Tailwind CSS, Spline for the 3D background.
+Backend: Node.js, Express, MongoDB with Mongoose.
+ML Pipeline: Python, Flask, PyTorch, torchvision with EfficientNet-B0, yt-dlp, ffmpeg.
 
-### Installation
+## Architecture
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/TRahulsingh/DeepfakeDetector.git
-   cd DeepfakeDetector
-   ```
+User pastes link in React frontend, which sends a request to the Express backend. Express calls the Python Flask microservice over HTTP. The Flask service uses yt-dlp to download the video and ffmpeg to extract 8 frames. Each frame is run through the EfficientNet-B0 model. Scores are averaged into a confidence value and a label of REAL, FAKE, or INCONCLUSIVE. The result is saved to MongoDB and returned to the frontend.
 
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Running locally
 
-3. **Download a pre-trained model** (or train your own):
-   - Place your model file as `models/best_model-v3.pt`
+Prerequisites: Node.js, Python 3.x, and ffmpeg installed and on PATH.
 
-### Usage
+Python environment, from project root:
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python python_service.py
 
-#### 🖥️ Web Application
+Backend, in a separate terminal:
+cd server
+npm install
+node app.js
 
-Launch the interactive web interface:
+Create a .env file in server folder with MONGO_URI, PORT=5001, and PYTHON_SERVICE_URL=http://localhost:5002
 
-```bash
-python web-app.py
-```
+Frontend, in a separate terminal:
+cd client
+npm install
+npm run dev
 
-The web app will open in your browser where you can:
-- Drag and drop images or videos
-- View real-time predictions with confidence scores
-- See preview of analyzed content
+## Known limitations
 
-#### 🔍 Command Line Classification
+Model trained on older face-swap datasets, weaker against fully AI-synthesized video. Private or restricted social media content may fail to download. Platform re-encoding strips all metadata. Processing takes 15 to 30 seconds per video.
 
-Classify individual images:
+## Credits
 
-```bash
-python classify.py path/to/your/image.jpg
-```
-
-#### 🎥 Video Analysis
-
-Process videos from a folder:
-
-```bash
-# Place videos in 'videos_to_predict' folder, then run:
-python inference/video_inference.py
-```
-
-## 📂 Supported Datasets
-
-This deepfake detection system supports various popular deepfake datasets. Below are the recommended datasets for training and evaluation:
-
-### 🎬 Video-based Datasets
-
-#### **FaceForensics++**
-- **Description**: One of the most comprehensive deepfake datasets with 4 manipulation methods
-- **Size**: ~1,000 original videos, ~4,000 manipulated videos
-- **Manipulations**: Deepfakes, Face2Face, FaceSwap, NeuralTextures
-- **Quality**: Raw, c23 (light compression), c40 (heavy compression)
-- **Download**: [GitHub Repository](https://github.com/ondyari/FaceForensics)
-- **Usage**: Excellent for training robust models across different manipulation types
-
-#### **Celeb-DF (v2)**
-- **Description**: High-quality celebrity deepfake dataset
-- **Size**: 590 real videos, 5,639 deepfake videos
-- **Quality**: High-resolution with improved visual quality
-- **Download**: [Official Website](https://github.com/yuezunli/celeb-deepfakeforensics)
-- **Usage**: Great for testing model performance on high-quality deepfakes
-
-#### **DFDC (Deepfake Detection Challenge)**
-- **Description**: Facebook's large-scale deepfake detection dataset
-- **Size**: ~100,000 videos (real and fake)
-- **Diversity**: Multiple actors, ethnicities, and ages
-- **Download**: [Kaggle Competition](https://www.kaggle.com/c/deepfake-detection-challenge)
-- **Usage**: Large-scale training and benchmarking
-
-#### **DFD (Google's Deepfake Detection Dataset)**
-- **Description**: Google/Jigsaw deepfake dataset
-- **Size**: ~3,000 deepfake videos
-- **Quality**: High-quality with various compression levels
-- **Download**: [FaceForensics++ repository](https://github.com/ondyari/FaceForensics)
-- **Usage**: Additional training data for model robustness
-
-### 🖼️ Image-based Datasets
-
-#### **140k Real and Fake Faces**
-- **Description**: Large collection of real and AI-generated face images
-- **Size**: ~140,000 images
-- **Source**: StyleGAN-generated faces vs real faces
-- **Download**: [Kaggle Dataset](https://www.kaggle.com/xhlulu/140k-real-and-fake-faces)
-- **Usage**: Perfect for image-based deepfake detection training
-
-#### **CelebA-HQ**
-- **Description**: High-quality celebrity face dataset
-- **Size**: 30,000 high-resolution images
-- **Quality**: 1024×1024 resolution
-- **Download**: [GitHub Repository](https://github.com/tkarras/progressive_growing_of_gans)
-- **Usage**: Real face examples for training
-
-### 🔧 Dataset Preparation
-
-#### Option 1: Download Pre-processed Datasets
-1. Download your chosen dataset from the links above
-2. Extract to the `data/` folder
-3. Organize as shown in the training section below
-
-#### Option 2: Use Dataset Preparation Tools
-Use our built-in tools to prepare datasets. Edit the source/destination paths inside each script before running:
-
-```bash
-# Extract frames from videos (every 15th frame) and split into train/val
-# Edit source & dest paths in the script, then run:
-python tools/split_video_dataset.py
-
-# Split an existing image dataset into 80/20 train/validation
-# Edit source_dataset & destination paths in the script, then run:
-python tools/split_train_val.py
-
-# Extract frames from a single video directory
-# Edit video_dir & output_dir in the script, then run:
-python tools/split_dataset.py
-```
-
-### 📋 Dataset Recommendations
-
-- **For Beginners**: Start with **140k Real and Fake Faces** (image-based, easy to work with)
-- **For Research**: Use **FaceForensics++** (comprehensive, multiple manipulation types)
-- **For Production**: Combine **DFDC** + **Celeb-DF** (large scale, diverse)
-- **For High-Quality Testing**: Use **Celeb-DF v2** (challenging, high-quality deepfakes)
-
-### ⚠️ Dataset Usage Notes
-
-- **Ethical Use**: These datasets are for research purposes only
-- **Legal Compliance**: Ensure compliance with dataset licenses and terms of use
-- **Privacy**: Respect privacy rights of individuals in the datasets
-- **Citation**: Properly cite the original dataset papers when publishing research
-
-## 🏋️ Training
-
-### Dataset Structure
-
-Organize your training data in the `data` folder as follows:
-```
-data/
-├── train/
-│   ├── real/
-│   │   ├── image1.jpg
-│   │   └── image2.jpg
-│   └── fake/
-│       ├── fake1.jpg
-│       └── fake2.jpg
-└── validation/
-    ├── real/
-    └── fake/
-```
-
-### Configuration
-
-Update `config.yaml` with your dataset paths:
-
-```yaml
-train_paths:
-  - data/train
-
-val_paths:
-  - data/validation
-
-lr: 0.0001
-batch_size: 4
-num_epochs: 10
-```
-
-### Start Training
-
-```bash
-python main_trainer.py
-```
-
-The training will:
-- Use PyTorch Lightning for efficient training
-- Save best model based on validation loss
-- Log metrics to TensorBoard
-- Apply early stopping to prevent overfitting
-
-### Monitor Training
-
-View training progress with TensorBoard:
-
-```bash
-tensorboard --logdir lightning_logs
-```
-
-## 📁 Project Structure
-
-```
-├── web-app.py                    # Main web application
-├── main_trainer.py               # Primary training script
-├── classify.py                   # Image classification utility
-├── realeval.py                   # Real-world evaluation script
-├── config.yaml                   # Training configuration
-├── requirements.txt              # Python dependencies
-├── README.md                     # Project documentation
-├── ARCHITECTURE.md               # System architecture & design
-├── LICENSE                       # MIT License
-├── .gitignore                    # Git ignore rules
-├── data/                         # Dataset storage (not tracked by git)
-│   ├── train/                    # Training data
-│   └── validation/               # Validation data
-├── datasets/
-│   └── hybrid_loader.py          # Custom dataset loader
-├── lightning_modules/
-│   └── detector.py               # PyTorch Lightning module
-├── models/
-│   └── best_model-v3.pt          # Trained model weights
-├── tools/                        # Dataset preparation utilities
-│   ├── export_to_pt.py           # .ckpt → .pt model converter
-│   ├── split_dataset.py          # Video frame extractor
-│   ├── split_train_val.py        # 80/20 train/val splitter
-│   └── split_video_dataset.py    # Video-aware dataset splitter
-└── inference/
-    ├── export_onnx.py            # ONNX export
-    └── video_inference.py        # Multi-frame video inference
-```
-
-## 🛠️ Model Architecture
-
-- **Backbone**: EfficientNet-B0 (pre-trained on ImageNet)
-- **Classifier**: Custom 2-class classifier with dropout (0.4)
-- **Input Size**: 224x224 RGB images
-- **Output**: Binary classification (Real/Fake) with confidence scores
-
-## 📊 Performance
-
-- **Inference Speed**: Real-time on GPU, ~200ms per image on CPU
-- **Input Support**: Images (.jpg, .png) and videos (.mp4, .mov)
-- **Video Analysis**: 10-frame uniform sampling with probability averaging
-- **Robustness**: Tested with Gaussian blur and JPEG compression noise simulation (`realeval.py`)
-
-> **Note**: Accuracy metrics depend on your training dataset. Monitor `val_loss` and `val_acc` via TensorBoard during training.
-
-## 🔧 Advanced Usage
-
-### Export to ONNX
-
-Convert PyTorch model to ONNX format:
-
-```bash
-python inference/export_onnx.py
-```
-
-### Batch Evaluation
-
-Evaluate a folder of real-world samples with optional noise simulation:
-
-```bash
-# Place test images/videos in realworld_samples/ folder, then run:
-python realeval.py
-```
-
-### Export Checkpoint to PyTorch
-
-Convert a Lightning `.ckpt` to a standalone `.pt` file:
-
-```bash
-# Edit ckpt_path and pt_output in the script, then run:
-python tools/export_to_pt.py
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 🙏 Acknowledgments
-
-- EfficientNet architecture by Google Research
-- PyTorch Lightning for training infrastructure
-- Gradio for web interface framework
-- The research community for deepfake detection advances
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License**.
-
----
-
-⭐ **Star this repository if you found it helpful!**
+Built on a pretrained EfficientNet-B0 deepfake classifier originally developed by T Rahul Singh, Mallikarjun Macherla, and Sainath. The link-to-result pipeline, honesty-first UI, and full-stack integration were built on top of that foundation.
