@@ -1,4 +1,4 @@
-﻿import json
+import json
 import torch
 from torchvision import transforms
 from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
@@ -123,6 +123,7 @@ def classify_video(url, num_frames=8):
     print("RESULT_JSON:" + json.dumps(result))
 
 def classify_video_for_api(url, num_frames=8):
+    """Same as classify_video, but returns the result dict instead of just printing it."""
     model = load_model()
     video_path = download_video(url)
     frame_paths = extract_frames(video_path, num_frames=num_frames)
