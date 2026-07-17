@@ -1,4 +1,4 @@
-import json
+﻿import json
 import torch
 from torchvision import transforms
 from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
@@ -55,29 +55,31 @@ def download_video(url, out_dir="downloads"):
     return out_path
 
 def extract_frames(video_path, frames_dir="frames", num_frames=8):
+    import cv2
     if os.path.exists(frames_dir):
         shutil.rmtree(frames_dir, ignore_errors=True)
     os.makedirs(frames_dir, exist_ok=True)
 
-    result = subprocess.run([
-        "ffprobe", "-v", "error", "-show_entries", "format=duration",
-        "-of", "default=noprint_wrappers=1:nokey=1", video_path
-    ], capture_output=True, text=True)
-    duration = float(result.stdout.strip())
+    cap = cv2.VideoCapture(video_path)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30
+    duration = total_frames / fps if fps else 0
 
     print(f"[*] Video duration: {duration:.1f}s -- extracting {num_frames} frames...")
 
-    interval = duration / (num_frames + 1)
+    saved_paths = []
+    interval = total_frames / (num_frames + 1)
     for i in range(1, num_frames + 1):
-        timestamp = interval * i
-        out_frame = os.path.join(frames_dir, f"frame_{i:02d}.jpg")
-        subprocess.run([
-            "ffmpeg", "-ss", str(timestamp), "-i", video_path,
-            "-frames:v", "1", "-q:v", "2", out_frame, "-y",
-            "-loglevel", "quiet"
-        ], check=True)
+        frame_index = int(interval * i)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+        success, frame = cap.read()
+        if success:
+            out_frame = os.path.join(frames_dir, f"frame_{i:02d}.jpg")
+            cv2.imwrite(out_frame, frame)
+            saved_paths.append(out_frame)
 
-    return sorted(glob.glob(os.path.join(frames_dir, "*.jpg")))
+    cap.release()
+    return sorted(saved_paths)
 
 def classify_video(url, num_frames=8):
     model = load_model()
@@ -162,3 +164,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     classify_video(args.url, num_frames=args.frames)
+
